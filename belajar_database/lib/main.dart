@@ -11,10 +11,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter SQLite Demo',
+      debugShowCheckedModeBanner: false,
+      title: 'User Database App',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+        primarySwatch: Colors.deepPurple,
+        scaffoldBackgroundColor: const Color(0xFFF5F3FF),
+        fontFamily: 'Arial',
       ),
       home: const UserListScreen(),
     );
@@ -30,7 +32,9 @@ class UserListScreen extends StatefulWidget {
 
 class _UserListScreenState extends State<UserListScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
+
   List<Map<String, dynamic>> _users = [];
+
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
 
@@ -42,6 +46,7 @@ class _UserListScreenState extends State<UserListScreen> {
 
   void _refreshUsers() async {
     final data = await _dbHelper.getUsers();
+
     setState(() {
       _users = data;
     });
@@ -49,7 +54,9 @@ class _UserListScreenState extends State<UserListScreen> {
 
   void _showForm(int? id) async {
     if (id != null) {
-      final existingUser = _users.firstWhere((element) => element['id'] == id);
+      final existingUser =
+          _users.firstWhere((element) => element['id'] == id);
+
       _nameController.text = existingUser['name'];
       _ageController.text = existingUser['age'].toString();
     } else {
@@ -59,52 +66,70 @@ class _UserListScreenState extends State<UserListScreen> {
 
     showModalBottomSheet(
       context: context,
-      elevation: 5,
       isScrollControlled: true,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(25),
+        ),
       ),
-      builder: (_) => Container(
+      builder: (_) => Padding(
         padding: EdgeInsets.only(
-          top: 15,
-          left: 15,
-          right: 15,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 120,
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 30,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(10),
+            Text(
+              id == null ? "Tambah User" : "Edit User",
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: "Nama",
+                prefixIcon: const Icon(Icons.person),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            Text(
-              id == null ? 'Tambah User' : 'Edit User',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(hintText: 'Name'),
-            ),
-            const SizedBox(height: 10),
+
+            const SizedBox(height: 15),
+
             TextField(
               controller: _ageController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(hintText: 'Age'),
+              decoration: InputDecoration(
+                labelText: "Umur",
+                prefixIcon: const Icon(Icons.calendar_today),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
             ),
-            const SizedBox(height: 20),
-            Center(
+
+            const SizedBox(height: 25),
+
+            SizedBox(
+              width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
+                  if (_nameController.text.isEmpty ||
+                      _ageController.text.isEmpty) {
+                    return;
+                  }
+
                   if (id == null) {
                     await _dbHelper.insertUser({
                       'name': _nameController.text,
@@ -117,29 +142,27 @@ class _UserListScreenState extends State<UserListScreen> {
                       'age': int.tryParse(_ageController.text) ?? 0,
                     });
                   }
+
                   _nameController.clear();
                   _ageController.clear();
-                  if (mounted) Navigator.of(context).pop();
+
+                  if (mounted) Navigator.pop(context);
+
                   _refreshUsers();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: Colors.deepPurple,
                   foregroundColor: Colors.white,
-                  minimumSize: const Size(150, 45),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
+                    borderRadius: BorderRadius.circular(15),
                   ),
                 ),
-                child: Text(id == null ? 'TAMBAH' : 'UPDATE'),
+                child: Text(
+                  id == null ? "Tambah Data" : "Update Data",
+                ),
               ),
             ),
-            const SizedBox(height: 20),
-            Center(
-              child: IconButton(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.cancel, color: Colors.deepPurple, size: 30),
-              ),
-            )
           ],
         ),
       ),
@@ -149,24 +172,36 @@ class _UserListScreenState extends State<UserListScreen> {
   void _confirmDelete(int id) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Konfirmasi Hapus'),
-        content: const Text('Apakah anda yakin ingin menghapus user ini?'),
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Text("Hapus Data"),
+        content: const Text(
+          "Apakah yakin ingin menghapus data ini?",
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Batal', style: TextStyle(color: Colors.deepPurple)),
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Batal"),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () async {
               await _dbHelper.deleteUser(id);
-              if (mounted) Navigator.of(ctx).pop();
+
+              if (mounted) Navigator.pop(context);
+
               _refreshUsers();
             },
-            child: const Text('Hapus', style: TextStyle(color: Colors.deepPurple)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text(
+              "Hapus",
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       ),
     );
   }
@@ -174,40 +209,96 @@ class _UserListScreenState extends State<UserListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F0FF),
       appBar: AppBar(
-        title: const Text('List User Data', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: ListView.builder(
-        itemCount: _users.length,
-        itemBuilder: (context, index) => Card(
-          margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          child: ListTile(
-            title: Text(_users[index]['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('Umur: ${_users[index]['age']}'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.indigo),
-                  onPressed: () => _showForm(_users[index]['id']),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.black87),
-                  onPressed: () => _confirmDelete(_users[index]['id']),
-                ),
-              ],
-            ),
-          ),
+        title: const Text(
+          "User Database",
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
+        centerTitle: true,
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
+        elevation: 5,
       ),
+
+      body: _users.isEmpty
+          ? const Center(
+              child: Text(
+                "Belum ada data user",
+                style: TextStyle(fontSize: 18),
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: _users.length,
+              itemBuilder: (context, index) {
+                return Card(
+                  elevation: 5,
+                  margin: const EdgeInsets.only(bottom: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(15),
+
+                    leading: CircleAvatar(
+                      radius: 28,
+                      backgroundColor: Colors.deepPurple.shade100,
+                      child: Text(
+                        _users[index]['name'][0].toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
+                    ),
+
+                    title: Text(
+                      _users[index]['name'],
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 5),
+                      child: Text(
+                        "Umur: ${_users[index]['age']} Tahun",
+                      ),
+                    ),
+
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.edit,
+                            color: Colors.blue,
+                          ),
+                          onPressed: () =>
+                              _showForm(_users[index]['id']),
+                        ),
+
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete,
+                            color: Colors.red,
+                          ),
+                          onPressed: () =>
+                              _confirmDelete(_users[index]['id']),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showForm(null),
-        backgroundColor: const Color(0xFFDCD6F7),
-        child: const Icon(Icons.add, color: Colors.black),
+        backgroundColor: Colors.deepPurple,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
